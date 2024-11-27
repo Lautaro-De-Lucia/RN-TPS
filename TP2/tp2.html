@@ -26,7 +26,7 @@
       
 <center>
 <hr>
-<h1 id="font-colordarkbluetp1---redes-neuronalesfont"><font color="darkblue">TP1 - REDES NEURONALES</font> </h1>
+<h1 id="font-colordarkbluetp2---redes-neuronalesfont"><font color="darkblue">TP2 - REDES NEURONALES</font> </h1>
 <hr>
 </center>
 <ul>
@@ -37,7 +37,7 @@
 <h2>Padrón: 100203</h2>
 </li>
 <li>
-<h2>Fecha: 25/11/24</h2>
+<h2>Fecha: 27/11/24</h2>
 </li>
 </ul>
 <h2 id="introducción">Introducción </h2>
@@ -1248,6 +1248,420 @@ plt<span class="token punctuation">.</span>show<span class="token punctuation">(
 <h4 id="conclusiones-y-observaciones">Conclusiones y Observaciones </h4>
 <ul>
 <li>Las reconstrucciones resultan satisfactorias, siendo que ningún dígito se confunde con otro, al márgen de la pérdida de calidad en la imagen.</li>
+</ul>
+<center>
+<p><img src="image-110.png" alt="alt text"></p>
+</center>
+<ul>
+<li>Como se solicitó en clase, vamos a resolver este ejercicio por medio de PyTorch. Comenzamos por inicializar nuestro dispositivo y convertir nuestro dataset en tensores.</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-import">import</span> torch
+<span class="token keyword keyword-from">from</span> torchvision <span class="token keyword keyword-import">import</span> datasets
+<span class="token keyword keyword-import">import</span> torchvision<span class="token punctuation">.</span>transforms <span class="token keyword keyword-as">as</span> transforms
+
+<span class="token comment"># Device configuration (CPU or GPU)</span>
+device <span class="token operator">=</span> torch<span class="token punctuation">.</span>device<span class="token punctuation">(</span><span class="token string">'cuda'</span> <span class="token keyword keyword-if">if</span> torch<span class="token punctuation">.</span>cuda<span class="token punctuation">.</span>is_available<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword keyword-else">else</span> <span class="token string">'cpu'</span><span class="token punctuation">)</span>
+
+<span class="token comment"># Transform to normalize the data</span>
+transform <span class="token operator">=</span> transforms<span class="token punctuation">.</span>Compose<span class="token punctuation">(</span><span class="token punctuation">[</span>transforms<span class="token punctuation">.</span>ToTensor<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+
+<span class="token comment"># Load MNIST dataset</span>
+train_dataset <span class="token operator">=</span> datasets<span class="token punctuation">.</span>MNIST<span class="token punctuation">(</span>root<span class="token operator">=</span><span class="token string">'./data'</span><span class="token punctuation">,</span> train<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">,</span> transform<span class="token operator">=</span>transform<span class="token punctuation">,</span> download<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+test_dataset <span class="token operator">=</span> datasets<span class="token punctuation">.</span>MNIST<span class="token punctuation">(</span>root<span class="token operator">=</span><span class="token string">'./data'</span><span class="token punctuation">,</span> train<span class="token operator">=</span><span class="token boolean">False</span><span class="token punctuation">,</span> transform<span class="token operator">=</span>transform<span class="token punctuation">)</span>
+
+<span class="token comment"># Convert datasets to tensors</span>
+training_data <span class="token operator">=</span> train_dataset<span class="token punctuation">.</span>data<span class="token punctuation">.</span>unsqueeze<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">float</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token number">255.0</span>  <span class="token comment"># Shape: [60000, 1, 28, 28]</span>
+training_labels <span class="token operator">=</span> train_dataset<span class="token punctuation">.</span>targets<span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span>
+test_data <span class="token operator">=</span> test_dataset<span class="token punctuation">.</span>data<span class="token punctuation">.</span>unsqueeze<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">float</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span> <span class="token operator">/</span> <span class="token number">255.0</span>       <span class="token comment"># Shape: [10000, 1, 28, 28]</span>
+test_labels <span class="token operator">=</span> test_dataset<span class="token punctuation">.</span>targets<span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span>
+
+</code></pre><ul>
+<li>Definimos la función auxiliar make-minibatches a usar en el entrenamiento</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-def">def</span> <span class="token function">make_minibatches</span><span class="token punctuation">(</span>data<span class="token punctuation">,</span> labels<span class="token punctuation">,</span> batch_size<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    num_batches <span class="token operator">=</span> data<span class="token punctuation">.</span>shape<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span> <span class="token operator">//</span> batch_size
+    data_batches <span class="token operator">=</span> torch<span class="token punctuation">.</span>split<span class="token punctuation">(</span>data<span class="token punctuation">[</span><span class="token punctuation">:</span>num_batches <span class="token operator">*</span> batch_size<span class="token punctuation">]</span><span class="token punctuation">,</span> batch_size<span class="token punctuation">)</span>
+    label_batches <span class="token operator">=</span> torch<span class="token punctuation">.</span>split<span class="token punctuation">(</span>labels<span class="token punctuation">[</span><span class="token punctuation">:</span>num_batches <span class="token operator">*</span> batch_size<span class="token punctuation">]</span><span class="token punctuation">,</span> batch_size<span class="token punctuation">)</span>
+    <span class="token keyword keyword-return">return</span> data_batches<span class="token punctuation">,</span> label_batches
+
+</code></pre><p>Utilizamos el modelo de CNN propuesto en la práctica para diseñar 3 modelos de Red Neuronal Convolucional:</p>
+<ul>
+<li><em><strong>CNN</strong></em>: Basado en la implementación de la práctica, consta de dos capas convolucionales, una de max pooling y 3 totalmente conexas a la salida. La primera capa convolucional tiene 6 filtros con tamaños de 5x5, y la segunda tiene 16 filtros del mismo tamaño.</li>
+<li><em><strong>CNNmini</strong></em>: Misma estructura pero con menos complejidad en cada capa (reducción en la cantidad de filtros y neuronas).</li>
+<li><em><strong>CNNnano</strong></em>: Buscamos reducir la CNN a su mínima expresión, teniendo una sola capa de cada tipo y con solo 2 filtros en la capa convolucional, aumentando a su vez el tamaño de los kernels a los fines de mantener la cantidad de parámetros en un rango manejable.</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-class">class</span> <span class="token class-name">CNN</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>conv1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Conv2d<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>pool <span class="token operator">=</span> nn<span class="token punctuation">.</span>MaxPool2d<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>conv2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Conv2d<span class="token punctuation">(</span><span class="token number">6</span><span class="token punctuation">,</span> <span class="token number">16</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">16</span> <span class="token operator">*</span> <span class="token number">4</span> <span class="token operator">*</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">120</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">120</span><span class="token punctuation">,</span> <span class="token number">84</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc3 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">84</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>
+
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>pool<span class="token punctuation">(</span>F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>conv1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>pool<span class="token punctuation">(</span>F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>conv2<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> torch<span class="token punctuation">.</span>flatten<span class="token punctuation">(</span>x<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc2<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc3<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> x
+
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">CNNmini</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>conv1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Conv2d<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>pool <span class="token operator">=</span> nn<span class="token punctuation">.</span>MaxPool2d<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>conv2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Conv2d<span class="token punctuation">(</span><span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">5</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">4</span> <span class="token operator">*</span> <span class="token number">4</span> <span class="token operator">*</span> <span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">20</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">20</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>
+
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>pool<span class="token punctuation">(</span>F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>conv1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>pool<span class="token punctuation">(</span>F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>conv2<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> torch<span class="token punctuation">.</span>flatten<span class="token punctuation">(</span>x<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc2<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> x
+
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">CNNnano</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>conv1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Conv2d<span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">)</span>  <span class="token comment"># Kernel 8x8</span>
+        self<span class="token punctuation">.</span>pool <span class="token operator">=</span> nn<span class="token punctuation">.</span>MaxPool2d<span class="token punctuation">(</span><span class="token number">4</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">)</span>  <span class="token comment"># Pooling 4x4</span>
+        self<span class="token punctuation">.</span>fc1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">2</span> <span class="token operator">*</span> <span class="token number">5</span> <span class="token operator">*</span> <span class="token number">5</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>  <span class="token comment"># Ajusta entradas de fc1</span>
+
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>pool<span class="token punctuation">(</span>F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>conv1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> torch<span class="token punctuation">.</span>flatten<span class="token punctuation">(</span>x<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc1<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> x
+
+
+</code></pre><ul>
+<li>Definimos una función de entrenamiento y evaluación y comparamos la eficacia de los 3 modelos sobre el dataset MNIST para 10 epochs.</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-def">def</span> <span class="token function">train_and_evaluate</span><span class="token punctuation">(</span>model<span class="token punctuation">,</span> train_loader<span class="token punctuation">,</span> test_loader<span class="token punctuation">,</span> epochs<span class="token operator">=</span><span class="token number">10</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    device <span class="token operator">=</span> torch<span class="token punctuation">.</span>device<span class="token punctuation">(</span><span class="token string">'cuda'</span> <span class="token keyword keyword-if">if</span> torch<span class="token punctuation">.</span>cuda<span class="token punctuation">.</span>is_available<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token keyword keyword-else">else</span> <span class="token string">'cpu'</span><span class="token punctuation">)</span>
+    model<span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span>
+    criterion <span class="token operator">=</span> nn<span class="token punctuation">.</span>CrossEntropyLoss<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    optimizer <span class="token operator">=</span> optim<span class="token punctuation">.</span>SGD<span class="token punctuation">(</span>model<span class="token punctuation">.</span>parameters<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> lr<span class="token operator">=</span><span class="token number">0.01</span><span class="token punctuation">,</span> momentum<span class="token operator">=</span><span class="token number">0.9</span><span class="token punctuation">)</span>
+
+    train_accuracy <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    test_accuracy <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+
+    <span class="token keyword keyword-for">for</span> epoch <span class="token keyword keyword-in">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>epochs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        model<span class="token punctuation">.</span>train<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        correct <span class="token operator">=</span> <span class="token number">0</span>
+        total <span class="token operator">=</span> <span class="token number">0</span>
+        <span class="token keyword keyword-for">for</span> inputs<span class="token punctuation">,</span> labels <span class="token keyword keyword-in">in</span> <span class="token builtin">zip</span><span class="token punctuation">(</span><span class="token operator">*</span>make_minibatches<span class="token punctuation">(</span><span class="token operator">*</span>train_loader<span class="token punctuation">,</span> batch_size<span class="token operator">=</span><span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+            inputs<span class="token punctuation">,</span> labels <span class="token operator">=</span> inputs<span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span><span class="token punctuation">,</span> labels<span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span>
+            optimizer<span class="token punctuation">.</span>zero_grad<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            outputs <span class="token operator">=</span> model<span class="token punctuation">(</span>inputs<span class="token punctuation">)</span>
+            loss <span class="token operator">=</span> criterion<span class="token punctuation">(</span>outputs<span class="token punctuation">,</span> labels<span class="token punctuation">)</span>
+            loss<span class="token punctuation">.</span>backward<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            optimizer<span class="token punctuation">.</span>step<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+            _<span class="token punctuation">,</span> predicted <span class="token operator">=</span> outputs<span class="token punctuation">.</span><span class="token builtin">max</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+            total <span class="token operator">+=</span> labels<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+            correct <span class="token operator">+=</span> <span class="token punctuation">(</span>predicted <span class="token operator">==</span> labels<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">sum</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        train_accuracy<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token number">100</span> <span class="token operator">*</span> correct <span class="token operator">/</span> total<span class="token punctuation">)</span>
+
+        <span class="token comment"># Evaluate on test data</span>
+        model<span class="token punctuation">.</span><span class="token builtin">eval</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        correct <span class="token operator">=</span> <span class="token number">0</span>
+        total <span class="token operator">=</span> <span class="token number">0</span>
+        <span class="token keyword keyword-with">with</span> torch<span class="token punctuation">.</span>no_grad<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+            <span class="token keyword keyword-for">for</span> inputs<span class="token punctuation">,</span> labels <span class="token keyword keyword-in">in</span> <span class="token builtin">zip</span><span class="token punctuation">(</span><span class="token operator">*</span>make_minibatches<span class="token punctuation">(</span><span class="token operator">*</span>test_loader<span class="token punctuation">,</span> batch_size<span class="token operator">=</span><span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+                inputs<span class="token punctuation">,</span> labels <span class="token operator">=</span> inputs<span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span><span class="token punctuation">,</span> labels<span class="token punctuation">.</span>to<span class="token punctuation">(</span>device<span class="token punctuation">)</span>
+                outputs <span class="token operator">=</span> model<span class="token punctuation">(</span>inputs<span class="token punctuation">)</span>
+                _<span class="token punctuation">,</span> predicted <span class="token operator">=</span> outputs<span class="token punctuation">.</span><span class="token builtin">max</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+                total <span class="token operator">+=</span> labels<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+                correct <span class="token operator">+=</span> <span class="token punctuation">(</span>predicted <span class="token operator">==</span> labels<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">sum</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+        test_accuracy<span class="token punctuation">.</span>append<span class="token punctuation">(</span><span class="token number">100</span> <span class="token operator">*</span> correct <span class="token operator">/</span> total<span class="token punctuation">)</span>
+
+    <span class="token keyword keyword-return">return</span> train_accuracy<span class="token punctuation">,</span> test_accuracy
+
+
+</code></pre><center>
+<p><img src="image-113.png" alt="alt text"></p>
+</center>
+<ul>
+<li>
+<p>Predeciblemente, la precisión desciende con el tamaño de el modelo. Sin embargo, vale la pena resaltar que todos los modelos logran una precisión superior al 90%, incluso en el caso de la CNNnano, la cual como ya se mencionó se diseño para reducir una red convolucional a su minima expresión.</p>
+</li>
+<li>
+<p>Es probable que esto se deba a que el dataset MNIST consta de imágenes pequeñas, pocas clases, un solo canal, entre otras características que hacen que se pueda prescindir de una excesiva capacidad en la red neuronal para obtener buenos resultados.</p>
+</li>
+<li>
+<p>A continuación, se busco hacer lo mismo para el perceptrón multicapa, definiendo 3 modelos y comparando su performance. En particular, dada la consigna, se busco el minimo tamaño requerido para el perceptrón para alcanzar una precisión del 90%.</p>
+</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-class">class</span> <span class="token class-name">MLP</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">,</span> <span class="token number">256</span><span class="token punctuation">)</span>  
+        self<span class="token punctuation">.</span>fc2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">256</span><span class="token punctuation">,</span> <span class="token number">128</span><span class="token punctuation">)</span>      
+        self<span class="token punctuation">.</span>fc3 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">128</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span>       
+        self<span class="token punctuation">.</span>fc4 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">,</span> <span class="token number">32</span><span class="token punctuation">)</span>        
+        self<span class="token punctuation">.</span>fc5 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">32</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>        
+
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> x<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc2<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc3<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc4<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc5<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> x
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">MLPmini</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span>   
+        self<span class="token punctuation">.</span>fc2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">,</span> <span class="token number">32</span><span class="token punctuation">)</span>        
+        self<span class="token punctuation">.</span>fc3 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">32</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>        
+
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> x<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc2<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc3<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> x
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">MLPnano</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">,</span> <span class="token number">8</span><span class="token punctuation">)</span>  
+        self<span class="token punctuation">.</span>fc2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>        
+
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> x<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc2<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> x
+
+
+
+</code></pre><p><img src="image-112.png" alt="alt text"></p>
+<ul>
+<li>
+<p>Como se puede observar, el modelo MLPnano, consistente de tan solo una capa oculta con 8 neurona, logra exactamente una precisión del 90%, por lo que este es el mínimo tamaño requerido que se solicita en la consigna. Por lo demás, sigue siendo notable que con una red neuronal tan reducida se pueda alcanzar esa precisión, y no podemos más que nuevamente atribuirlo a las características de el dataset MNIST.</p>
+</li>
+<li>
+<p>Por último, se busco tener una estimación cuantitativa de la complejidad de cada modelo en términos de la cantidad de parámetros que poseen. Para esto resulto muy util la biblioteca 'torchsummary'.</p>
+</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token comment"># Add all models to a dictionary</span>
+models <span class="token operator">=</span> <span class="token punctuation">{</span>
+    <span class="token string">"CNN"</span><span class="token punctuation">:</span> CNN<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token string">"CNNmini"</span><span class="token punctuation">:</span> CNNmini<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token string">"CNNnano"</span><span class="token punctuation">:</span> CNNnano<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token string">"MLP"</span><span class="token punctuation">:</span> MLP<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token string">"MLPmini"</span><span class="token punctuation">:</span> MLPmini<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token string">"MLPnano"</span><span class="token punctuation">:</span> MLPnano<span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment"># Input size for MNIST</span>
+input_size <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">28</span><span class="token punctuation">,</span> <span class="token number">28</span><span class="token punctuation">)</span>
+
+<span class="token comment"># Compute parameters</span>
+params <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+<span class="token keyword keyword-for">for</span> name<span class="token punctuation">,</span> model <span class="token keyword keyword-in">in</span> models<span class="token punctuation">.</span>items<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token comment"># Adjust input size for MLP models</span>
+    <span class="token keyword keyword-if">if</span> <span class="token string">"MLP"</span> <span class="token keyword keyword-in">in</span> name<span class="token punctuation">:</span>
+        info <span class="token operator">=</span> summary<span class="token punctuation">(</span>model<span class="token punctuation">,</span> input_size<span class="token operator">=</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">)</span><span class="token punctuation">,</span> verbose<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">)</span>
+    <span class="token keyword keyword-else">else</span><span class="token punctuation">:</span>
+        info <span class="token operator">=</span> summary<span class="token punctuation">(</span>model<span class="token punctuation">,</span> input_size<span class="token operator">=</span>input_size<span class="token punctuation">,</span> verbose<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">)</span>
+    params<span class="token punctuation">.</span>append<span class="token punctuation">(</span>info<span class="token punctuation">.</span>total_params<span class="token punctuation">)</span>
+
+<span class="token comment"># Plot Parameters</span>
+plt<span class="token punctuation">.</span>figure<span class="token punctuation">(</span>figsize<span class="token operator">=</span><span class="token punctuation">(</span><span class="token number">12</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+plt<span class="token punctuation">.</span>bar<span class="token punctuation">(</span>models<span class="token punctuation">.</span>keys<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> params<span class="token punctuation">,</span> alpha<span class="token operator">=</span><span class="token number">0.7</span><span class="token punctuation">,</span> color<span class="token operator">=</span><span class="token string">'green'</span><span class="token punctuation">)</span>
+plt<span class="token punctuation">.</span>ylabel<span class="token punctuation">(</span><span class="token string">"Number of Parameters"</span><span class="token punctuation">)</span>
+plt<span class="token punctuation">.</span>title<span class="token punctuation">(</span><span class="token string">"Model Size (Parameters) of CNN and MLP Models"</span><span class="token punctuation">)</span>
+plt<span class="token punctuation">.</span>grid<span class="token punctuation">(</span>axis<span class="token operator">=</span><span class="token string">'y'</span><span class="token punctuation">,</span> linestyle<span class="token operator">=</span><span class="token string">'--'</span><span class="token punctuation">,</span> alpha<span class="token operator">=</span><span class="token number">0.7</span><span class="token punctuation">)</span>
+plt<span class="token punctuation">.</span>show<span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+
+</code></pre><center>
+<p><img src="image-114.png" alt="alt text"></p>
+</center>
+<ul>
+<li>En donde se ilustran claramente las ventajas de una red convolucional respecto a un perceptrón para la clasificación de imágenes, siendo cada versión de el modelo CNN más pequeña que su equivalente en el modelo MLP.</li>
+</ul>
+<p><img src="image-115.png" alt="alt text"></p>
+<ul>
+<li>Empezamos por implementar un Autoencoder sencillo por medio de PyTorch. Esta clase reduce la dimensión de el problema a <code>encoding_dim</code>. En nuestra implementación, tomamos a este valor como <span style="color: #ee7f49; font-weight: 500;">ParseError: KaTeX parse error: Undefined control sequence: \Dim at position 7: \frac{\̲D̲i̲m̲(MNIST)}{R}</span>, siendo la dimensión de cada imágen de MNIST <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>28</mn><mi>x</mi><mn>28</mn><mo>=</mo><mn>784</mn></mrow><annotation encoding="application/x-tex">28x28=784</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">28</span><span class="mord mathnormal">x</span><span class="mord">28</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">784</span></span></span></span> y nuestro reductor <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mo>=</mo><mn>4</mn></mrow><annotation encoding="application/x-tex">R=4</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.00773em;">R</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:0.6444em;"></span><span class="mord">4</span></span></span></span>, el cual juzgamos aporta una compresión razonable al tiempo que debería preservar la información relevante de las imágenes.</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-class">class</span> <span class="token class-name">Autoencoder</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> encoding_dim<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span>Autoencoder<span class="token punctuation">,</span> self<span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token comment"># Encoder network</span>
+        self<span class="token punctuation">.</span>encoder <span class="token operator">=</span> nn<span class="token punctuation">.</span>Sequential<span class="token punctuation">(</span>
+            nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">,</span> encoding_dim<span class="token punctuation">)</span><span class="token punctuation">,</span>
+            nn<span class="token punctuation">.</span>ReLU<span class="token punctuation">(</span><span class="token boolean">True</span><span class="token punctuation">)</span>
+        <span class="token punctuation">)</span>
+        <span class="token comment"># Decoder network</span>
+        self<span class="token punctuation">.</span>decoder <span class="token operator">=</span> nn<span class="token punctuation">.</span>Sequential<span class="token punctuation">(</span>
+            nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span>encoding_dim<span class="token punctuation">,</span> <span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+            nn<span class="token punctuation">.</span>Sigmoid<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">)</span>
+        
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> x<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">28</span><span class="token operator">*</span><span class="token number">28</span><span class="token punctuation">)</span>  <span class="token comment"># Flatten the input</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>encoder<span class="token punctuation">(</span>x<span class="token punctuation">)</span>     <span class="token comment"># Encode the input</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>decoder<span class="token punctuation">(</span>x<span class="token punctuation">)</span>     <span class="token comment"># Decode the encoded representation</span>
+        <span class="token keyword keyword-return">return</span> x
+
+</code></pre><ul>
+<li>Entrenamos este AutoEncoder para 5 epochs</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code>encoding_dim <span class="token operator">=</span> <span class="token number">196</span>
+autoencoder <span class="token operator">=</span> Autoencoder<span class="token punctuation">(</span>encoding_dim<span class="token punctuation">)</span>
+criterion <span class="token operator">=</span> nn<span class="token punctuation">.</span>MSELoss<span class="token punctuation">(</span><span class="token punctuation">)</span>
+optimizer <span class="token operator">=</span> optim<span class="token punctuation">.</span>Adam<span class="token punctuation">(</span>autoencoder<span class="token punctuation">.</span>parameters<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> lr<span class="token operator">=</span><span class="token number">1e-3</span><span class="token punctuation">)</span>
+num_epochs <span class="token operator">=</span> <span class="token number">5</span>
+
+<span class="token keyword keyword-for">for</span> epoch <span class="token keyword keyword-in">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>num_epochs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    running_loss <span class="token operator">=</span> <span class="token number">0.0</span>
+    <span class="token keyword keyword-for">for</span> data <span class="token keyword keyword-in">in</span> trainloader<span class="token punctuation">:</span>
+        img<span class="token punctuation">,</span> _ <span class="token operator">=</span> data
+        img <span class="token operator">=</span> img<span class="token punctuation">.</span>view<span class="token punctuation">(</span>img<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
+        output <span class="token operator">=</span> autoencoder<span class="token punctuation">(</span>img<span class="token punctuation">)</span>
+        loss <span class="token operator">=</span> criterion<span class="token punctuation">(</span>output<span class="token punctuation">,</span> img<span class="token punctuation">)</span>
+        optimizer<span class="token punctuation">.</span>zero_grad<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        loss<span class="token punctuation">.</span>backward<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        optimizer<span class="token punctuation">.</span>step<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        running_loss <span class="token operator">+=</span> loss<span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword keyword-print">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'Epoch [</span><span class="token interpolation"><span class="token punctuation">{</span>epoch<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token punctuation">{</span>num_epochs<span class="token punctuation">}</span></span><span class="token string">], Loss: </span><span class="token interpolation"><span class="token punctuation">{</span>running_loss<span class="token operator">/</span><span class="token builtin">len</span><span class="token punctuation">(</span>trainloader<span class="token punctuation">)</span><span class="token punctuation">:</span><span class="token format-spec">.4f</span><span class="token punctuation">}</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+
+</code></pre><ul>
+<li>Creamos la función <code>get_encoded_data</code> para obtener los datos en baja dimensionalidad</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-def">def</span> <span class="token function">get_encoded_data</span><span class="token punctuation">(</span>autoencoder<span class="token punctuation">,</span> dataloader<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    encoded_outputs <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    labels <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    <span class="token keyword keyword-with">with</span> torch<span class="token punctuation">.</span>no_grad<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword keyword-for">for</span> data <span class="token keyword keyword-in">in</span> dataloader<span class="token punctuation">:</span>
+            img<span class="token punctuation">,</span> label <span class="token operator">=</span> data
+            img <span class="token operator">=</span> img<span class="token punctuation">.</span>view<span class="token punctuation">(</span>img<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span>
+            encoded <span class="token operator">=</span> autoencoder<span class="token punctuation">.</span>encoder<span class="token punctuation">(</span>img<span class="token punctuation">)</span>
+            encoded_outputs<span class="token punctuation">.</span>append<span class="token punctuation">(</span>encoded<span class="token punctuation">)</span>
+            labels<span class="token punctuation">.</span>append<span class="token punctuation">(</span>label<span class="token punctuation">)</span>
+    encoded_outputs <span class="token operator">=</span> torch<span class="token punctuation">.</span>cat<span class="token punctuation">(</span>encoded_outputs<span class="token punctuation">)</span>
+    labels <span class="token operator">=</span> torch<span class="token punctuation">.</span>cat<span class="token punctuation">(</span>labels<span class="token punctuation">)</span>
+    <span class="token keyword keyword-return">return</span> encoded_outputs<span class="token punctuation">,</span> labels
+
+encoded_train_data<span class="token punctuation">,</span> train_labels <span class="token operator">=</span> get_encoded_data<span class="token punctuation">(</span>autoencoder<span class="token punctuation">,</span> trainloader<span class="token punctuation">)</span>
+encoded_test_data<span class="token punctuation">,</span> test_labels <span class="token operator">=</span> get_encoded_data<span class="token punctuation">(</span>autoencoder<span class="token punctuation">,</span> testloader<span class="token punctuation">)</span>
+
+</code></pre><ul>
+<li>Definimos perceptrones para alta y baja dimensionalidad (basamos ambos en el MLPmini del ejercicio anterior)</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-class">class</span> <span class="token class-name">MLP_on_encoded</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span>MLP_on_encoded<span class="token punctuation">,</span> self<span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span>encoding_dim<span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">,</span> <span class="token number">32</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc3 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">32</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>
+        
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc2<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc3<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> x
+
+<span class="token keyword keyword-class">class</span> <span class="token class-name">MLP</span><span class="token punctuation">(</span>nn<span class="token punctuation">.</span>Module<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    <span class="token keyword keyword-def">def</span> <span class="token function">__init__</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token builtin">super</span><span class="token punctuation">(</span>MLPmini<span class="token punctuation">,</span> self<span class="token punctuation">)</span><span class="token punctuation">.</span>__init__<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc1 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">28</span> <span class="token operator">*</span> <span class="token number">28</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc2 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">64</span><span class="token punctuation">,</span> <span class="token number">32</span><span class="token punctuation">)</span>
+        self<span class="token punctuation">.</span>fc3 <span class="token operator">=</span> nn<span class="token punctuation">.</span>Linear<span class="token punctuation">(</span><span class="token number">32</span><span class="token punctuation">,</span> <span class="token number">10</span><span class="token punctuation">)</span>
+        
+    <span class="token keyword keyword-def">def</span> <span class="token function">forward</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        x <span class="token operator">=</span> x<span class="token punctuation">.</span>view<span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">28</span><span class="token operator">*</span><span class="token number">28</span><span class="token punctuation">)</span>  <span class="token comment"># Flatten the input</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc1<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> F<span class="token punctuation">.</span>relu<span class="token punctuation">(</span>self<span class="token punctuation">.</span>fc2<span class="token punctuation">(</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        x <span class="token operator">=</span> self<span class="token punctuation">.</span>fc3<span class="token punctuation">(</span>x<span class="token punctuation">)</span>
+        <span class="token keyword keyword-return">return</span> x
+
+
+</code></pre><ul>
+<li>Definimos funciones de entrenamiento y evaluación que computen tanto el tiempo de entrenamiento como la precisión de cada modelo</li>
+</ul>
+<pre data-role="codeBlock" data-info="py" class="language-python py"><code><span class="token keyword keyword-def">def</span> <span class="token function">train_model</span><span class="token punctuation">(</span>model<span class="token punctuation">,</span> train_data<span class="token punctuation">,</span> train_labels<span class="token punctuation">,</span> criterion<span class="token punctuation">,</span> optimizer<span class="token punctuation">,</span> num_epochs<span class="token operator">=</span><span class="token number">5</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+    model<span class="token punctuation">.</span>train<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword keyword-for">for</span> epoch <span class="token keyword keyword-in">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>num_epochs<span class="token punctuation">)</span><span class="token punctuation">:</span>
+        running_loss <span class="token operator">=</span> <span class="token number">0.0</span>
+        permutation <span class="token operator">=</span> torch<span class="token punctuation">.</span>randperm<span class="token punctuation">(</span>train_data<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+        <span class="token keyword keyword-for">for</span> i <span class="token keyword keyword-in">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> train_data<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+            indices <span class="token operator">=</span> permutation<span class="token punctuation">[</span>i<span class="token punctuation">:</span>i<span class="token operator">+</span><span class="token number">64</span><span class="token punctuation">]</span>
+            inputs <span class="token operator">=</span> train_data<span class="token punctuation">[</span>indices<span class="token punctuation">]</span>
+            labels <span class="token operator">=</span> train_labels<span class="token punctuation">[</span>indices<span class="token punctuation">]</span>
+            optimizer<span class="token punctuation">.</span>zero_grad<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            outputs <span class="token operator">=</span> model<span class="token punctuation">(</span>inputs<span class="token punctuation">)</span>
+            loss <span class="token operator">=</span> criterion<span class="token punctuation">(</span>outputs<span class="token punctuation">,</span> labels<span class="token punctuation">)</span>
+            loss<span class="token punctuation">.</span>backward<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            optimizer<span class="token punctuation">.</span>step<span class="token punctuation">(</span><span class="token punctuation">)</span>
+            running_loss <span class="token operator">+=</span> loss<span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token keyword keyword-print">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'Epoch [</span><span class="token interpolation"><span class="token punctuation">{</span>epoch<span class="token operator">+</span><span class="token number">1</span><span class="token punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token punctuation">{</span>num_epochs<span class="token punctuation">}</span></span><span class="token string">], Loss: </span><span class="token interpolation"><span class="token punctuation">{</span>running_loss<span class="token operator">/</span><span class="token punctuation">(</span>train_data<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token operator">//</span><span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">:</span><span class="token format-spec">.4f</span><span class="token punctuation">}</span></span><span class="token string">'</span></span><span class="token punctuation">)</span>
+
+model_encoded <span class="token operator">=</span> MLP_on_encoded<span class="token punctuation">(</span><span class="token punctuation">)</span>
+criterion <span class="token operator">=</span> nn<span class="token punctuation">.</span>CrossEntropyLoss<span class="token punctuation">(</span><span class="token punctuation">)</span>
+optimizer <span class="token operator">=</span> optim<span class="token punctuation">.</span>Adam<span class="token punctuation">(</span>model_encoded<span class="token punctuation">.</span>parameters<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span> lr<span class="token operator">=</span><span class="token number">1e-3</span><span class="token punctuation">)</span>
+
+start_time <span class="token operator">=</span> time<span class="token punctuation">.</span>time<span class="token punctuation">(</span><span class="token punctuation">)</span>
+train_model<span class="token punctuation">(</span>model_encoded<span class="token punctuation">,</span> encoded_train_data<span class="token punctuation">,</span> train_labels<span class="token punctuation">,</span> criterion<span class="token punctuation">,</span> optimizer<span class="token punctuation">,</span> num_epochs<span class="token operator">=</span><span class="token number">5</span><span class="token punctuation">)</span>
+encoded_train_time <span class="token operator">=</span> time<span class="token punctuation">.</span>time<span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">-</span> start_time
+
+<span class="token keyword keyword-def">def</span> <span class="token function">evaluate_model</span><span class="token punctuation">(</span>model<span class="token punctuation">,</span> test_data<span class="token punctuation">,</span> test_labels<span class="token punctuation">)</span><span class="token punctuation">:</span>
+    model<span class="token punctuation">.</span><span class="token builtin">eval</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    correct <span class="token operator">=</span> <span class="token number">0</span>
+    total <span class="token operator">=</span> <span class="token number">0</span>
+    <span class="token keyword keyword-with">with</span> torch<span class="token punctuation">.</span>no_grad<span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+        <span class="token keyword keyword-for">for</span> i <span class="token keyword keyword-in">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">,</span> test_data<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token number">64</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
+            inputs <span class="token operator">=</span> test_data<span class="token punctuation">[</span>i<span class="token punctuation">:</span>i<span class="token operator">+</span><span class="token number">64</span><span class="token punctuation">]</span>
+            labels <span class="token operator">=</span> test_labels<span class="token punctuation">[</span>i<span class="token punctuation">:</span>i<span class="token operator">+</span><span class="token number">64</span><span class="token punctuation">]</span>
+            outputs <span class="token operator">=</span> model<span class="token punctuation">(</span>inputs<span class="token punctuation">)</span>
+            _<span class="token punctuation">,</span> predicted <span class="token operator">=</span> torch<span class="token punctuation">.</span><span class="token builtin">max</span><span class="token punctuation">(</span>outputs<span class="token punctuation">.</span>data<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span>
+            total <span class="token operator">+=</span> labels<span class="token punctuation">.</span>size<span class="token punctuation">(</span><span class="token number">0</span><span class="token punctuation">)</span>
+            correct <span class="token operator">+=</span> <span class="token punctuation">(</span>predicted <span class="token operator">==</span> labels<span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token builtin">sum</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>item<span class="token punctuation">(</span><span class="token punctuation">)</span>
+    accuracy <span class="token operator">=</span> <span class="token number">100</span> <span class="token operator">*</span> correct <span class="token operator">/</span> total
+    <span class="token keyword keyword-print">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f'Accuracy of the model on test data: </span><span class="token interpolation"><span class="token punctuation">{</span>accuracy<span class="token punctuation">:</span><span class="token format-spec">.2f</span><span class="token punctuation">}</span></span><span class="token string">%'</span></span><span class="token punctuation">)</span>
+    <span class="token keyword keyword-return">return</span> accuracy
+
+encoded_accuracy <span class="token operator">=</span> evaluate_model<span class="token punctuation">(</span>model_encoded<span class="token punctuation">,</span> encoded_test_data<span class="token punctuation">,</span> test_labels<span class="token punctuation">)</span>
+
+</code></pre><ul>
+<li>Los resultados obtenidos se muestran a continuación</li>
+</ul>
+<pre data-role="codeBlock" data-info="sh" class="language-bash sh"><code>Training Time Comparison:
+Training <span class="token function">time</span> on encoded data: <span class="token number">12.68</span> seconds
+Training <span class="token function">time</span> on original data: <span class="token number">68.72</span> seconds
+
+Accuracy Comparison:
+Accuracy on encoded data: <span class="token number">94.77</span>%
+Accuracy on original data: <span class="token number">97.08</span>%
+
+</code></pre><ul>
+<li>Esta claro viendo el tiempo de entrenamiento que la dimensionalidad del problema efectivamente se esta reduciendo. Sin embargo, notamos que esto apenas reduce la presición de el modelo. El resultado no es del todo insólito si calculamos el ECM en el entrenamiento de el Auto-Encoder, el cual es impresionantemente bajo.</li>
+</ul>
+<pre data-role="codeBlock" data-info="sh" class="language-bash sh"><code>Epoch <span class="token punctuation">[</span><span class="token number">1</span>/5<span class="token punctuation">]</span>, Loss: <span class="token number">0.0241</span>
+Epoch <span class="token punctuation">[</span><span class="token number">2</span>/5<span class="token punctuation">]</span>, Loss: <span class="token number">0.0055</span>
+Epoch <span class="token punctuation">[</span><span class="token number">3</span>/5<span class="token punctuation">]</span>, Loss: <span class="token number">0.0032</span>
+Epoch <span class="token punctuation">[</span><span class="token number">4</span>/5<span class="token punctuation">]</span>, Loss: <span class="token number">0.0024</span>
+Epoch <span class="token punctuation">[</span><span class="token number">5</span>/5<span class="token punctuation">]</span>, Loss: <span class="token number">0.0021</span>
+
+</code></pre><ul>
+<li>En suma, nuestras conclusiones son las siguientes: La diferencia entre entrenar el MLP con datos codificados o con los datos originales es mínima, esto solo puede deberse a la precisión de el autoencoder en preservar las características principales de las imágenes en baja dimensionalidad. A su vez, hipotetizamos como en el ejercicio anterior que esto se debe a la simplicidad de el dataset MNIST, que no requiere una red neuronal de altísima capacidad para almacenar sus características principales.</li>
+<li></li>
 </ul>
 
       </div>
