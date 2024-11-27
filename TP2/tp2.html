@@ -236,11 +236,9 @@ c-16-25.333-24-45-24-59z"></path></svg></span></span></span></span></span></span
         self<span class="token punctuation">.</span>errors_ <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>  <span class="token comment"># Lista para almacenar los errores por época</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">step_function</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Función escalón unitario"""</span>
         <span class="token keyword keyword-return">return</span> np<span class="token punctuation">.</span>where<span class="token punctuation">(</span>x <span class="token operator">&gt;=</span> <span class="token number">0</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">train</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> inputs<span class="token punctuation">,</span> outputs<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Entrena el perceptrón usando el algoritmo descrito y registra los errores"""</span>
         <span class="token comment"># Inicializamos el número de muestras y características</span>
         num_samples<span class="token punctuation">,</span> num_features <span class="token operator">=</span> inputs<span class="token punctuation">.</span>shape
 
@@ -269,7 +267,6 @@ c-16-25.333-24-45-24-59z"></path></svg></span></span></span></span></span></span
                 <span class="token keyword keyword-break">break</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">predict</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> inputs<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Realiza predicciones con los pesos entrenados"""</span>
         linear_output <span class="token operator">=</span> np<span class="token punctuation">.</span>dot<span class="token punctuation">(</span>inputs<span class="token punctuation">,</span> self<span class="token punctuation">.</span>weights<span class="token punctuation">)</span> <span class="token operator">+</span> self<span class="token punctuation">.</span>bias
         <span class="token keyword keyword-return">return</span> self<span class="token punctuation">.</span>step_function<span class="token punctuation">(</span>linear_output<span class="token punctuation">)</span>
 
@@ -277,7 +274,6 @@ c-16-25.333-24-45-24-59z"></path></svg></span></span></span></span></span></span
 <li>Adicionalmente, se define una función <code>plot_decision_boundary</code> que utiliza los parámetros obtenidos durante el entrenamiento y realiza una gráfica de la recta discriminante así como las entradas correspondientes a cada perceptrón, distinguiendo su clasificación con colores.</li>
 </ul>
 <pre data-role="codeBlock" data-info="py" class="language-python py"><code>    <span class="token keyword keyword-def">def</span> <span class="token function">plot_decision_boundary</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> inputs<span class="token punctuation">,</span> outputs<span class="token punctuation">,</span> title<span class="token operator">=</span><span class="token string">''</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Grafica la recta discriminante y los datos de entrada"""</span>
 
         <span class="token comment"># Verificar que las entradas sean bidimensionales</span>
         <span class="token keyword keyword-if">if</span> inputs<span class="token punctuation">.</span>shape<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token operator">!=</span> <span class="token number">2</span><span class="token punctuation">:</span>
@@ -316,7 +312,6 @@ c-16-25.333-24-45-24-59z"></path></svg></span></span></span></span></span></span
 <li>Finalmente, definimos una función <code>plot_errors</code> que simplemente realice un plot de la evolución del error que se obtuvo durante el entrenamiento.</li>
 </ul>
 <pre data-role="codeBlock" data-info="py" class="language-python py"><code>    <span class="token keyword keyword-def">def</span> <span class="token function">plot_errors</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> title<span class="token operator">=</span><span class="token string">'Evolución del error de clasificación'</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Grafica la evolución del error de clasificación durante el entrenamiento"""</span>
         plt<span class="token punctuation">.</span>figure<span class="token punctuation">(</span>figsize<span class="token operator">=</span><span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
         plt<span class="token punctuation">.</span>plot<span class="token punctuation">(</span><span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token builtin">len</span><span class="token punctuation">(</span>self<span class="token punctuation">.</span>errors_<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> self<span class="token punctuation">.</span>errors_<span class="token punctuation">,</span> marker<span class="token operator">=</span><span class="token string">'o'</span><span class="token punctuation">)</span>
         plt<span class="token punctuation">.</span>xlabel<span class="token punctuation">(</span><span class="token string">'Épochs'</span><span class="token punctuation">)</span>
@@ -484,17 +479,6 @@ c-16-25.333-24-45-24-59z"></path></svg></span></span></span></span></span></span
 </li>
 </ul>
 <pre data-role="codeBlock" data-info="py" class="language-python py"><code>    <span class="token keyword keyword-def">def</span> <span class="token function">simulate_capacity</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> N<span class="token punctuation">,</span> num_experiments<span class="token operator">=</span><span class="token number">100</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""
-        Estima la capacidad C(N, p) para valores de p desde 1 hasta 4*N.
-
-        Parámetros:
-            N: Cantidad de Inputs
-            num_experiments: Número de experimentos aleatorios por valor de p (por defecto 100).
-
-        Devuelve:
-            p_over_N_list: Lista de valores p/N.
-            capacity_list: Lista de estimaciones de C(N, p).
-        """</span>
         max_p <span class="token operator">=</span> <span class="token builtin">int</span><span class="token punctuation">(</span><span class="token number">4</span> <span class="token operator">*</span> N<span class="token punctuation">)</span>
         p_values <span class="token operator">=</span> <span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> max_p <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span>
         capacity_list <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
@@ -691,15 +675,12 @@ c-16-25.333-24-45-24-59z"></path></svg></span></span></span></span></span></span
         self<span class="token punctuation">.</span>errors_ <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">sigmoid</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Función de activación sigmoide"""</span>
         <span class="token keyword keyword-return">return</span> <span class="token number">1</span> <span class="token operator">/</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">+</span> np<span class="token punctuation">.</span>exp<span class="token punctuation">(</span><span class="token operator">-</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">sigmoid_derivative</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Derivada de la función sigmoide"""</span>
         <span class="token keyword keyword-return">return</span> x <span class="token operator">*</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">-</span> x<span class="token punctuation">)</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">train</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> X<span class="token punctuation">,</span> y<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Entrena la red neuronal usando el algoritmo de backpropagation con condición de corte"""</span>
         <span class="token keyword keyword-for">for</span> epoch <span class="token keyword keyword-in">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>self<span class="token punctuation">.</span>max_epochs<span class="token punctuation">)</span><span class="token punctuation">:</span>
             <span class="token comment"># FORWARD PASS</span>
             <span class="token comment"># Capa oculta</span>
@@ -739,7 +720,6 @@ c-16-25.333-24-45-24-59z"></path></svg></span></span></span></span></span></span
             self<span class="token punctuation">.</span>b_input_layer <span class="token operator">+=</span> self<span class="token punctuation">.</span>learning_rate <span class="token operator">*</span> np<span class="token punctuation">.</span><span class="token builtin">sum</span><span class="token punctuation">(</span>delta_input_layer<span class="token punctuation">,</span> axis<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">,</span> keepdims<span class="token operator">=</span><span class="token boolean">True</span><span class="token punctuation">)</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">predict</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> X<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Realiza predicciones usando la red neuronal entrenada"""</span>
         <span class="token comment"># Capa oculta</span>
         input_layer_input <span class="token operator">=</span> np<span class="token punctuation">.</span>dot<span class="token punctuation">(</span>X<span class="token punctuation">,</span> self<span class="token punctuation">.</span>W<span class="token punctuation">)</span> <span class="token operator">+</span> self<span class="token punctuation">.</span>b_input_layer
         input_layer_output <span class="token operator">=</span> self<span class="token punctuation">.</span>sigmoid<span class="token punctuation">(</span>input_layer_input<span class="token punctuation">)</span>
@@ -752,7 +732,6 @@ c-16-25.333-24-45-24-59z"></path></svg></span></span></span></span></span></span
         <span class="token keyword keyword-return">return</span> np<span class="token punctuation">.</span>where<span class="token punctuation">(</span>final_output <span class="token operator">&gt;=</span> <span class="token number">0.5</span><span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">0</span><span class="token punctuation">)</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">plot_errors</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> title<span class="token operator">=</span><span class="token string">'Evolución del error durante el entrenamiento'</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Grafica la evolución del error cuadrático medio durante el entrenamiento"""</span>
         plt<span class="token punctuation">.</span>figure<span class="token punctuation">(</span>figsize<span class="token operator">=</span><span class="token punctuation">(</span><span class="token number">8</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
         plt<span class="token punctuation">.</span>plot<span class="token punctuation">(</span><span class="token builtin">range</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token builtin">len</span><span class="token punctuation">(</span>self<span class="token punctuation">.</span>errors_<span class="token punctuation">)</span> <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> self<span class="token punctuation">.</span>errors_<span class="token punctuation">,</span> marker<span class="token operator">=</span><span class="token string">'o'</span><span class="token punctuation">)</span>
         plt<span class="token punctuation">.</span>xlabel<span class="token punctuation">(</span><span class="token string">'Épocas'</span><span class="token punctuation">)</span>
@@ -901,15 +880,12 @@ y_test <span class="token operator">=</span> f_test<span class="token punctuatio
         self<span class="token punctuation">.</span>test_errors <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">sigmoid</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Función de activación sigmoide"""</span>
         <span class="token keyword keyword-return">return</span> <span class="token number">1</span> <span class="token operator">/</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">+</span> np<span class="token punctuation">.</span>exp<span class="token punctuation">(</span><span class="token operator">-</span>x<span class="token punctuation">)</span><span class="token punctuation">)</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">sigmoid_derivative</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> x<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Derivada de la función sigmoide"""</span>
         <span class="token keyword keyword-return">return</span> x <span class="token operator">*</span> <span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">-</span> x<span class="token punctuation">)</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">train</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> X_train<span class="token punctuation">,</span> y_train<span class="token punctuation">,</span> X_test<span class="token punctuation">,</span> y_test<span class="token punctuation">,</span> batch_size<span class="token operator">=</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Entrena la red neuronal utilizando backpropagation con soporte para minibatches"""</span>
         n_samples <span class="token operator">=</span> X_train<span class="token punctuation">.</span>shape<span class="token punctuation">[</span><span class="token number">0</span><span class="token punctuation">]</span>
         <span class="token keyword keyword-for">for</span> epoch <span class="token keyword keyword-in">in</span> <span class="token builtin">range</span><span class="token punctuation">(</span>self<span class="token punctuation">.</span>max_epochs<span class="token punctuation">)</span><span class="token punctuation">:</span>
             <span class="token comment"># Mezclar los datos de entrenamiento al inicio de cada época</span>
@@ -937,10 +913,10 @@ y_test <span class="token operator">=</span> f_test<span class="token punctuatio
                 error <span class="token operator">=</span> y_batch <span class="token operator">-</span> final_output                              <span class="token comment"># Error en la salida</span>
 
                 <span class="token comment"># Calcular el delta en la capa de salida</span>
-                delta_output <span class="token operator">=</span> error                                        <span class="token comment"># δ_o = (y_d - z)</span>
+                delta_output <span class="token operator">=</span> error                                        
 
                 <span class="token comment"># Calcular el delta en la capa oculta</span>
-                delta_hidden <span class="token operator">=</span> delta_output<span class="token punctuation">.</span>dot<span class="token punctuation">(</span>self<span class="token punctuation">.</span>V<span class="token punctuation">.</span>T<span class="token punctuation">)</span> <span class="token operator">*</span> self<span class="token punctuation">.</span>sigmoid_derivative<span class="token punctuation">(</span>hidden_output<span class="token punctuation">)</span>  <span class="token comment"># δ_h = δ_o * V^T * g'(H_1)</span>
+                delta_hidden <span class="token operator">=</span> delta_output<span class="token punctuation">.</span>dot<span class="token punctuation">(</span>self<span class="token punctuation">.</span>V<span class="token punctuation">.</span>T<span class="token punctuation">)</span> <span class="token operator">*</span> self<span class="token punctuation">.</span>sigmoid_derivative<span class="token punctuation">(</span>hidden_output<span class="token punctuation">)</span>  
 
                 <span class="token comment"># Actualizar los pesos y biases</span>
                 <span class="token comment"># Actualizar V y b_output (capa de salida)</span>
@@ -965,7 +941,6 @@ y_test <span class="token operator">=</span> f_test<span class="token punctuatio
                 <span class="token keyword keyword-print">print</span><span class="token punctuation">(</span><span class="token string-interpolation"><span class="token string">f"Época </span><span class="token interpolation"><span class="token punctuation">{</span>epoch <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">}</span></span><span class="token string">/</span><span class="token interpolation"><span class="token punctuation">{</span>self<span class="token punctuation">.</span>max_epochs<span class="token punctuation">}</span></span><span class="token string">, Error de entrenamiento: </span><span class="token interpolation"><span class="token punctuation">{</span>train_error<span class="token punctuation">:</span><span class="token format-spec">.6f</span><span class="token punctuation">}</span></span><span class="token string">, Error de evaluación: </span><span class="token interpolation"><span class="token punctuation">{</span>test_error<span class="token punctuation">:</span><span class="token format-spec">.6f</span><span class="token punctuation">}</span></span><span class="token string">"</span></span><span class="token punctuation">)</span>
 
     <span class="token keyword keyword-def">def</span> <span class="token function">predict</span><span class="token punctuation">(</span>self<span class="token punctuation">,</span> X<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Realiza predicciones usando la red neuronal entrenada"""</span>
         <span class="token comment"># Capa oculta</span>
         hidden_input <span class="token operator">=</span> np<span class="token punctuation">.</span>dot<span class="token punctuation">(</span>X<span class="token punctuation">,</span> self<span class="token punctuation">.</span>W<span class="token punctuation">)</span> <span class="token operator">+</span> self<span class="token punctuation">.</span>b_hidden
         hidden_output <span class="token operator">=</span> self<span class="token punctuation">.</span>sigmoid<span class="token punctuation">(</span>hidden_input<span class="token punctuation">)</span>
@@ -977,7 +952,6 @@ y_test <span class="token operator">=</span> f_test<span class="token punctuatio
         <span class="token keyword keyword-return">return</span> final_output
 
     <span class="token keyword keyword-def">def</span> <span class="token function">plot_errors</span><span class="token punctuation">(</span>self<span class="token punctuation">)</span><span class="token punctuation">:</span>
-        <span class="token triple-quoted-string string">"""Grafica la evolución del error de entrenamiento y evaluación"""</span>
         plt<span class="token punctuation">.</span>figure<span class="token punctuation">(</span>figsize<span class="token operator">=</span><span class="token punctuation">(</span><span class="token number">10</span><span class="token punctuation">,</span> <span class="token number">6</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
         plt<span class="token punctuation">.</span>plot<span class="token punctuation">(</span>self<span class="token punctuation">.</span>train_errors<span class="token punctuation">,</span> label<span class="token operator">=</span><span class="token string">'Error de entrenamiento'</span><span class="token punctuation">)</span>
         plt<span class="token punctuation">.</span>plot<span class="token punctuation">(</span>self<span class="token punctuation">.</span>test_errors<span class="token punctuation">,</span> label<span class="token operator">=</span><span class="token string">'Error de evaluación'</span><span class="token punctuation">)</span>
